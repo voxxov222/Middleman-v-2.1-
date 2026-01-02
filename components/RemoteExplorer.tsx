@@ -24,6 +24,11 @@ import {
 } from 'lucide-react';
 import { RemoteFile } from '../types';
 
+interface RemoteExplorerProps {
+  target: { ip: string; mac: string };
+  onClose: () => void;
+}
+
 const getFileIcon = (fileName: string, type: 'FILE' | 'FOLDER') => {
   if (type === 'FOLDER') return <Folder size={14} className="text-sky-400" />;
   const ext = fileName.split('.').pop()?.toLowerCase();
@@ -73,6 +78,11 @@ const MOCK_FS: Record<string, RemoteFile[]> = {
     { name: 'com.android.providers.telephony', type: 'FOLDER', modified: '2024-05-22', permissions: 'drwx------' },
     { name: 'com.android.providers.contacts', type: 'FOLDER', modified: '2024-05-22', permissions: 'drwx------' },
     { name: 'com.whatsapp', type: 'FOLDER', modified: '2024-05-23', permissions: 'drwx------' },
+    { name: 'call_recordings', type: 'FOLDER', modified: '2024-05-24', permissions: 'drwx------' },
+  ],
+  '/data/call_recordings': [
+    { name: 'REC_20240520_ELIAS.wav', type: 'FILE', size: '4.2MB', modified: '2024-05-20', permissions: '-rw-------' },
+    { name: 'REC_20240522_CMD_BASE.wav', type: 'FILE', size: '1.8MB', modified: '2024-05-22', permissions: '-rw-------' },
   ],
   '/data/com.android.providers.telephony': [
     { name: 'databases', type: 'FOLDER', modified: '2024-05-22', permissions: 'drwx------' },
@@ -81,54 +91,26 @@ const MOCK_FS: Record<string, RemoteFile[]> = {
     { name: 'mmssms.db', type: 'FILE', size: '2.4MB', modified: '2024-05-23', permissions: '-rw-------' },
     { name: 'telephony.db', type: 'FILE', size: '128KB', modified: '2024-05-23', permissions: '-rw-------' },
   ],
-  '/data/com.android.providers.contacts/databases': [
-    { name: 'contacts2.db', type: 'FILE', size: '4.1MB', modified: '2024-05-23', permissions: '-rw-------' },
-    { name: 'calllog.db', type: 'FILE', size: '840KB', modified: '2024-05-23', permissions: '-rw-------' },
-  ],
   '/sdcard': [
     { name: 'DCIM', type: 'FOLDER', modified: '2024-05-20', permissions: 'drwxrwxr-x' },
     { name: 'Download', type: 'FOLDER', modified: '2024-05-22', permissions: 'drwxrwxr-x' },
     { name: 'Documents', type: 'FOLDER', modified: '2024-05-22', permissions: 'drwxrwxr-x' },
+    { name: 'SignalDumps', type: 'FOLDER', modified: '2024-05-25', permissions: 'drwxrwxr-x' },
     { name: 'Pictures', type: 'FOLDER', modified: '2024-05-20', permissions: 'drwxrwxr-x' },
-    { name: 'Movies', type: 'FOLDER', modified: '2024-05-18', permissions: 'drwxrwxr-x' },
-    { name: 'Music', type: 'FOLDER', modified: '2024-01-10', permissions: 'drwxrwxr-x' },
   ],
-  '/sdcard/DCIM': [
-    { name: 'Camera', type: 'FOLDER', modified: '2024-05-20', permissions: 'drwxrwxr-x' },
-    { name: 'Screenshots', type: 'FOLDER', modified: '2024-05-21', permissions: 'drwxrwxr-x' },
-  ],
-  '/sdcard/DCIM/Camera': [
-    { name: 'IMG_20240515_1422.jpg', type: 'FILE', size: '3.4MB', modified: '2024-05-15', permissions: '-rw-rw-r--' },
-    { name: 'IMG_20240515_1425.jpg', type: 'FILE', size: '2.9MB', modified: '2024-05-15', permissions: '-rw-rw-r--' },
-    { name: 'VID_20240516_0900.mp4', type: 'FILE', size: '45MB', modified: '2024-05-16', permissions: '-rw-rw-r--' },
+  '/sdcard/SignalDumps': [
+    { name: 'BSSID_UPLINK_08.cap', type: 'FILE', size: '890KB', modified: '2024-05-25', permissions: '-rw-rw-r--' },
+    { name: 'HANDSHAKE_WPA3.pcap', type: 'FILE', size: '12KB', modified: '2024-05-25', permissions: '-rw-rw-r--' },
   ],
   '/sdcard/Download': [
     { name: 'security_audit_report.pdf', type: 'FILE', size: '1.2MB', modified: '2024-05-22', permissions: '-rw-rw-r--' },
-    { name: 'vpn_config_secure.ovpn', type: 'FILE', size: '4KB', modified: '2024-05-21', permissions: '-rw-------' },
+    { name: 'mission_brief_v5.pdf', type: 'FILE', size: '3.4MB', modified: '2024-05-24', permissions: '-rw-rw-r--' },
     { name: 'glitch_test_sequence.gif', type: 'FILE', size: '8.4MB', modified: '2024-05-20', permissions: '-rw-rw-r--' },
-    { name: 'encrypted_payload.zip', type: 'FILE', size: '156MB', modified: '2024-05-19', permissions: '-rw-------' },
   ],
   '/sdcard/Documents': [
-    { name: 'Operational', type: 'FOLDER', modified: '2024-05-22', permissions: 'drwxrwxr-x' },
-    { name: 'Private', type: 'FOLDER', modified: '2024-05-22', permissions: 'drwx------' },
-  ],
-  '/sdcard/Documents/Operational': [
-    { name: 'target_profiles.pdf', type: 'FILE', size: '5.6MB', modified: '2024-05-22', permissions: '-rw-rw-r--' },
-    { name: 'mission_brief_v4.pdf', type: 'FILE', size: '890KB', modified: '2024-05-21', permissions: '-rw-rw-r--' },
-    { name: 'intercept_summary.json', type: 'FILE', size: '45KB', modified: '2024-05-23', permissions: '-rw-rw-r--' },
-  ],
-  '/sdcard/Documents/Private': [
-    { name: 'vault.kdbx', type: 'FILE', size: '512KB', modified: '2024-05-23', permissions: '-rw-------' },
-    { name: 'ssh_id_rsa.pem', type: 'FILE', size: '2KB', modified: '2024-05-22', permissions: '-rw-------' },
-    { name: 'tax_records_2023.pdf', type: 'FILE', size: '2.1MB', modified: '2024-03-10', permissions: '-rw-------' },
-  ],
-  '/sdcard/Pictures': [
-    { name: 'Telegram', type: 'FOLDER', modified: '2024-05-20', permissions: 'drwxrwxr-x' },
-    { name: 'hidden_cam_loop.gif', type: 'FILE', size: '12MB', modified: '2024-05-21', permissions: '-rw-rw-r--' },
-  ],
-  '/sdcard/Movies': [
-    { name: 'surveillance_feed_08.mp4', type: 'FILE', size: '240MB', modified: '2024-05-22', permissions: '-rw-rw-r--' },
-    { name: 'intercepted_facetime.mov', type: 'FILE', size: '85MB', modified: '2024-05-21', permissions: '-rw-------' },
+    { name: 'Asset_Profiles.pdf', type: 'FILE', size: '5.6MB', modified: '2024-05-22', permissions: '-rw-rw-r--' },
+    { name: 'SAFEHOUSE_LOCATION.gpg', type: 'FILE', size: '2KB', modified: '2024-05-23', permissions: '-rw-------' },
+    { name: 'operational_log.txt', type: 'FILE', size: '14KB', modified: '2024-05-25', permissions: '-rw-rw-r--' },
   ]
 };
 
@@ -245,11 +227,11 @@ const RemoteExplorer: React.FC<RemoteExplorerProps> = ({ target, onClose }) => {
            <button onClick={() => setPath(['sdcard'])} className={`flex items-center gap-3 p-2 rounded text-[10px] font-bold transition-all ${path[0] === 'sdcard' ? 'bg-sky-500/10 text-sky-100' : 'text-sky-500/60 hover:bg-sky-500/5'}`}>
              <Folder size={14} /> User_Storage
            </button>
-           <button onClick={() => setPath(['data', 'com.android.providers.telephony', 'databases'])} className={`flex items-center gap-3 p-2 rounded text-[10px] font-bold transition-all ${path.includes('telephony') ? 'bg-sky-500/10 text-sky-100' : 'text-sky-500/60 hover:bg-sky-500/5'}`}>
-             <Database size={14} /> Comms_Logs
+           <button onClick={() => setPath(['data', 'call_recordings'])} className={`flex items-center gap-3 p-2 rounded text-[10px] font-bold transition-all ${path.includes('call_recordings') ? 'bg-sky-500/10 text-sky-100' : 'text-sky-500/60 hover:bg-sky-500/5'}`}>
+             <Music size={14} /> Audio_Intercepts
            </button>
-           <button onClick={() => setPath(['sdcard', 'Documents', 'Operational'])} className={`flex items-center gap-3 p-2 rounded text-[10px] font-bold transition-all ${path.includes('Operational') ? 'bg-sky-500/10 text-sky-100' : 'text-sky-500/60 hover:bg-sky-500/5'}`}>
-             <FileText size={14} /> Intel_Docs
+           <button onClick={() => setPath(['sdcard', 'SignalDumps'])} className={`flex items-center gap-3 p-2 rounded text-[10px] font-bold transition-all ${path.includes('SignalDumps') ? 'bg-sky-500/10 text-sky-100' : 'text-sky-500/60 hover:bg-sky-500/5'}`}>
+             <Database size={14} /> RF_Dumps
            </button>
         </div>
 
@@ -298,7 +280,6 @@ const RemoteExplorer: React.FC<RemoteExplorerProps> = ({ target, onClose }) => {
                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all cursor-pointer group ${selectedFile?.name === file.name ? 'bg-sky-500/20 border-sky-500 shadow-[0_0_20px_rgba(56,189,248,0.2)]' : 'bg-slate-900/20 border-sky-500/5 hover:border-sky-500/20 hover:bg-sky-500/5'}`}
                      >
                         <div className="w-12 h-12 flex items-center justify-center transform group-hover:scale-110 transition-transform">
-                           {/* Fix: cast element to any to resolve property 'size' lookup error on ReactElement */}
                            {React.cloneElement(getFileIcon(file.name, file.type) as React.ReactElement<any>, { size: 32 })}
                         </div>
                         <span className="text-[10px] font-bold text-sky-100 text-center truncate w-full group-hover:text-white">{file.name}</span>
@@ -314,7 +295,6 @@ const RemoteExplorer: React.FC<RemoteExplorerProps> = ({ target, onClose }) => {
           <div className="w-72 border-l border-sky-500/10 bg-slate-950/40 p-6 animate-in slide-in-from-right flex flex-col gap-6">
              <div className="flex flex-col items-center gap-4 text-center">
                 <div className="w-20 h-20 bg-sky-500/10 rounded-2xl border border-sky-500/20 flex items-center justify-center shadow-lg">
-                   {/* Fix: cast element to any to resolve property 'size' lookup error on ReactElement */}
                    {React.cloneElement(getFileIcon(selectedFile.name, selectedFile.type) as React.ReactElement<any>, { size: 40 })}
                 </div>
                 <div>
@@ -333,7 +313,6 @@ const RemoteExplorer: React.FC<RemoteExplorerProps> = ({ target, onClose }) => {
                       <div className="flex justify-between"><span className="opacity-40">Size:</span><span className="font-bold">{selectedFile.size}</span></div>
                       <div className="flex justify-between"><span className="opacity-40">Mod:</span><span className="font-bold">{selectedFile.modified}</span></div>
                       <div className="flex justify-between"><span className="opacity-40">Perm:</span><span className="font-mono text-sky-600">{selectedFile.permissions}</span></div>
-                      <div className="flex justify-between"><span className="opacity-40">Mime:</span><span className="font-bold uppercase">{selectedFile.name.split('.').pop() || 'binary'}</span></div>
                    </div>
                 </div>
 
@@ -347,13 +326,6 @@ const RemoteExplorer: React.FC<RemoteExplorerProps> = ({ target, onClose }) => {
                           <ShieldCheck size={14} /> Purge_Trace
                       </button>
                    </div>
-                </div>
-             </div>
-
-             <div className="mt-auto pt-4 border-t border-sky-500/10">
-                <div className="text-[8px] text-sky-500/20 font-black uppercase tracking-[0.3em] leading-tight text-center">
-                  Secure_Infiltration_Link_Active<br/>
-                  Bridge_Protocol: SMB-S-X
                 </div>
              </div>
           </div>

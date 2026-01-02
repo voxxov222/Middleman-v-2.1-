@@ -1,16 +1,18 @@
 
 import React, { useState } from 'react';
 import { InterceptLog } from '../types';
-import { HardDrive, Search, Trash2, ArrowLeft, ExternalLink, Calendar, Hash, Globe, Eye, Terminal, Camera, Share2 } from 'lucide-react';
+import { HardDrive, Search, Trash2, ArrowLeft, ExternalLink, Calendar, Hash, Globe, Eye, Terminal, Camera, Share2, Zap } from 'lucide-react';
+import TacticalScreenMirror from './TacticalScreenMirror';
 
 interface InterceptJournalProps {
   logs: InterceptLog[];
   onClear: () => void;
   onClose: () => void;
   onEstablishBridge?: (target: {ip: string, mac: string}) => void;
+  onLaunchOhm?: (target: {ip: string, mac: string}) => void;
 }
 
-const InterceptJournal: React.FC<InterceptJournalProps> = ({ logs, onClear, onClose, onEstablishBridge }) => {
+const InterceptJournal: React.FC<InterceptJournalProps> = ({ logs, onClear, onClose, onEstablishBridge, onLaunchOhm }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -87,7 +89,15 @@ const InterceptJournal: React.FC<InterceptJournalProps> = ({ logs, onClear, onCl
                   <span className="text-[10px] font-black text-sky-500/40 uppercase tracking-widest">Official_Record_ID</span>
                   <span className="text-sm font-black text-white">{selectedLog.id}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap gap-2 justify-end">
+                   {onLaunchOhm && selectedLog.ip !== '127.0.0.1' && (
+                     <button 
+                       onClick={() => onLaunchOhm({ip: selectedLog.ip, mac: selectedLog.mac})}
+                       className="px-4 py-1.5 bg-orange-500 text-black rounded font-black text-[10px] uppercase flex items-center gap-2 hover:bg-white transition-all shadow-lg"
+                     >
+                       <Zap size={12} /> LAUNCH_OHM_DIAGNOSTIC
+                     </button>
+                   )}
                    {onEstablishBridge && selectedLog.ip !== '127.0.0.1' && (
                      <button 
                        onClick={() => onEstablishBridge({ip: selectedLog.ip, mac: selectedLog.mac})}
@@ -122,29 +132,13 @@ const InterceptJournal: React.FC<InterceptJournalProps> = ({ logs, onClear, onCl
               <div className="bg-slate-900/20 border border-sky-500/10 p-4 rounded-xl">
                  <div className="flex items-center gap-2 mb-4">
                    <Eye size={14} className="text-amber-500" />
-                   <span className="text-[10px] font-black uppercase text-amber-500 tracking-wider">Official_Sequence_Reconstruction</span>
+                   <span className="text-[10px] font-black uppercase text-amber-500 tracking-wider">Official_Sequence_Interactive_Reconstruction</span>
                  </div>
                  
-                 {selectedLog.screenshot ? (
-                   <div className="flex justify-center items-center py-4 bg-black/40 rounded-lg">
-                      {/* Realistic Device Bezel */}
-                      <div className="relative p-3 bg-gradient-to-br from-slate-700 to-slate-900 rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.8),inset_0_0_10px_rgba(255,255,255,0.1)] border border-slate-600">
-                         {/* Front Facing Sensor */}
-                         <div className="absolute top-6 left-1/2 -translate-x-1/2 w-3 h-3 bg-black rounded-full border border-slate-800" />
-                         
-                         <div className="relative overflow-hidden rounded-[1.8rem] bg-black border border-black shadow-inner">
-                            <img src={selectedLog.screenshot} alt="Intercept" className="max-w-full max-h-[500px] object-contain" />
-                            <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-                         </div>
-                         
-                         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[7px] font-black text-sky-500/20 uppercase tracking-widest">RECON_NODE_08</div>
-                      </div>
-                   </div>
-                 ) : (
-                   <div className="h-32 bg-black flex items-center justify-center border border-dashed border-sky-500/20 rounded">
-                     <span className="text-[10px] text-sky-500/20 font-black uppercase tracking-[0.3em]">No_Visual_Data</span>
-                   </div>
-                 )}
+                 <div className="flex justify-center items-center py-4 bg-black/40 rounded-lg">
+                    {/* Interactive Tactical Mirror */}
+                    <TacticalScreenMirror initialActivity={selectedLog.target.split(':')[1]?.replace(/"/g, '')} />
+                 </div>
               </div>
 
               <div className="bg-slate-950 p-4 rounded border border-sky-500/10">

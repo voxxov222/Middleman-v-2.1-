@@ -2,7 +2,25 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { RadioState } from '../types';
 import { ICONS } from '../constants';
-import { ChevronUp, ChevronDown, Volume2, Maximize2, Settings, Menu, Zap, Edit3, Save, X, ArrowLeft, Terminal } from 'lucide-react';
+import { 
+  ChevronUp, 
+  ChevronDown, 
+  Volume2, 
+  Maximize2, 
+  Settings, 
+  Menu, 
+  Zap, 
+  Edit3, 
+  Save, 
+  X, 
+  ArrowLeft, 
+  Terminal,
+  Cpu,
+  SlidingScale,
+  Activity,
+  ShieldCheck,
+  ZapOff
+} from 'lucide-react';
 import URHAnalyzer from './URHAnalyzer';
 
 interface HamInterfaceProps {
@@ -28,9 +46,17 @@ const HamInterface: React.FC<HamInterfaceProps> = ({ onClose, activeFrequency })
   const [showModeMenu, setShowModeMenu] = useState(false);
   const [showWfMenu, setShowWfMenu] = useState(false);
   const [showURH, setShowURH] = useState(false);
+  const [showProgramMenu, setShowProgramMenu] = useState(false);
   const [isBuildingURH, setIsBuildingURH] = useState(false);
   const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
   
+  // Signal Programming States
+  const [progStart, setProgStart] = useState('1.00000');
+  const [progEnd, setProgEnd] = useState('30.00000');
+  const [progGain, setProgGain] = useState(45);
+  const [progFilter, setProgFilter] = useState('Band-Pass');
+  const [progProtocol, setProgProtocol] = useState('AES-256-XTS');
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const waterfallDataRef = useRef<number[]>([]);
   const animationRef = useRef<number>(0);
@@ -57,10 +83,10 @@ const HamInterface: React.FC<HamInterfaceProps> = ({ onClose, activeFrequency })
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setSmeter(Math.floor(Math.random() * 20) + (isAmplified ? 35 : 10));
+      setSmeter(Math.floor(Math.random() * 20) + (isAmplified ? 35 : 10) + (progGain / 5));
     }, 150);
     return () => clearInterval(interval);
-  }, [isAmplified]);
+  }, [isAmplified, progGain]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -81,6 +107,7 @@ const HamInterface: React.FC<HamInterfaceProps> = ({ onClose, activeFrequency })
         if (wfMode === 'STRONG') val *= 1.5;
         if (wfMode === 'WEAK') val *= 2.5;
         if (isAmplified) val *= 1.8;
+        val += (progGain / 10); // Influence from programmed gain
         const r = val > 150 ? val : 0;
         const g = val > 100 ? val : 0;
         const b = val + 50;
@@ -94,7 +121,7 @@ const HamInterface: React.FC<HamInterfaceProps> = ({ onClose, activeFrequency })
     };
     animationRef.current = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [wfMode, freq, isAmplified]);
+  }, [wfMode, freq, isAmplified, progGain]);
 
   const handleTune = useCallback((deltaMultiplier: number) => {
     const delta = currentStep * deltaMultiplier;
@@ -102,18 +129,24 @@ const HamInterface: React.FC<HamInterfaceProps> = ({ onClose, activeFrequency })
     setRotation(prev => (prev + (deltaMultiplier * 20)) % 360);
   }, [currentStep]);
 
-  const ControlButton: React.FC<{ label: string, active?: boolean, onClick?: () => void, variant?: 'default' | 'danger' | 'success' | 'orange' | 'gray' | 'purple' }> = ({ label, active = false, onClick, variant = 'default' }) => (
+  const ControlButton: React.FC<{ label: string, active?: boolean, onClick?: () => void, variant?: 'default' | 'danger' | 'success' | 'orange' | 'gray' | 'purple' | 'cyan' }> = ({ label, active = false, onClick, variant = 'default' }) => (
     <button 
       onClick={onClick}
       className={`h-10 rounded font-black text-[12px] uppercase tracking-tighter transition-all border border-black/40 ${
         active 
-          ? (variant === 'success' ? 'bg-green-600 text-white' : variant === 'purple' ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'bg-cyan-600 text-white') 
-          : (variant === 'orange' ? 'bg-orange-700/80 text-zinc-100' : variant === 'purple' ? 'bg-purple-900/40 text-purple-300 border-purple-500/30' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700')
+          ? (variant === 'success' ? 'bg-green-600 text-white' : variant === 'purple' ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]' : variant === 'cyan' ? 'bg-cyan-500 text-black' : 'bg-cyan-600 text-white') 
+          : (variant === 'orange' ? 'bg-orange-700/80 text-zinc-100' : variant === 'purple' ? 'bg-purple-900/40 text-purple-300 border-purple-500/30' : variant === 'cyan' ? 'bg-cyan-950/40 text-cyan-500 border-cyan-500/20' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700')
       }`}
     >
       {label}
     </button>
   );
+
+  const applyProgramming = () => {
+    const startNum = parseFloat(progStart);
+    if (!isNaN(startNum)) setFreq(startNum);
+    setShowProgramMenu(false);
+  };
 
   return (
     <div className="absolute inset-0 bg-[#121212] z-50 flex flex-col font-mono text-white overflow-hidden select-none">
@@ -138,12 +171,12 @@ const HamInterface: React.FC<HamInterfaceProps> = ({ onClose, activeFrequency })
       {/* TOP STATUS BAR */}
       <div className="bg-black/40 flex justify-between text-[11px] px-2 py-0.5 font-bold border-b border-zinc-800">
         <div className="flex gap-4">
-          <span className="text-green-500">D:60Kb/s <span className="text-green-400">U:13Kb/s</span></span>
-          <span className="text-green-500">D:26Kb/s <span className="text-green-400">U:6Kb/s</span></span>
+          <span className="text-green-500">D:269Kb/s <span className="text-green-400">U:324Kb/s</span></span>
+          <span className="text-green-500">D:77Kb/s <span className="text-green-400">U:797Kb/s</span></span>
         </div>
         <div className="flex gap-4">
-          <span className="text-green-400">pRxTx Lite</span>
-          <span className="text-green-500">Overall</span>
+          <span className="text-green-400">pRxTx Node-X</span>
+          <span className="text-green-500">Overall-94%</span>
         </div>
       </div>
 
@@ -213,25 +246,25 @@ const HamInterface: React.FC<HamInterfaceProps> = ({ onClose, activeFrequency })
         </div>
 
         <div className="mt-auto grid grid-cols-2 gap-2 p-2 relative z-10">
-           <ControlButton label="SQL" />
-           <ControlButton label="URH_PACK" variant="purple" onClick={deployURH} />
+           <ControlButton label="SQL_MUTE" />
+           <ControlButton label="ADV_PROGRAM" variant="cyan" onClick={() => setShowProgramMenu(true)} />
         </div>
       </div>
 
       {/* BOTTOM DISPLAY */}
       <div className="bg-black p-1 border-t-2 border-zinc-800">
         <div className="grid grid-cols-4 gap-1 mb-1">
-           <div className="bg-zinc-800 flex items-center justify-center text-[10px] font-black italic text-zinc-400">Logo</div>
+           <div className="bg-zinc-800 flex items-center justify-center text-[10px] font-black italic text-zinc-400">Tactical</div>
            <div className="bg-orange-950 border border-orange-500 rounded flex items-center justify-center p-1">
               <div className="w-8 h-8 rounded-full bg-orange-600 border-2 border-orange-400" />
            </div>
            <div className="bg-black border border-zinc-800 rounded" />
            <div className="grid grid-cols-2 gap-1">
-              <div onClick={() => setShowModeMenu(true)} className="bg-zinc-900 border border-zinc-700 rounded p-0.5 flex flex-col items-center">
+              <div onClick={() => setShowModeMenu(true)} className="bg-zinc-900 border border-zinc-700 rounded p-0.5 flex flex-col items-center cursor-pointer">
                  <span className="text-[7px] text-cyan-400 uppercase font-black">Mode</span>
                  <span className="text-[12px] font-black">{mode}</span>
               </div>
-              <div onClick={() => setBandwidth(BANDWIDTHS[(BANDWIDTHS.indexOf(bandwidth) + 1) % BANDWIDTHS.length])} className="bg-zinc-900 border border-zinc-700 rounded p-0.5 flex flex-col items-center">
+              <div onClick={() => setBandwidth(BANDWIDTHS[(BANDWIDTHS.indexOf(bandwidth) + 1) % BANDWIDTHS.length])} className="bg-zinc-900 border border-zinc-700 rounded p-0.5 flex flex-col items-center cursor-pointer">
                  <span className="text-[7px] text-cyan-400 uppercase font-black">BW</span>
                  <span className="text-[12px] font-black">{bandwidth}</span>
               </div>
@@ -271,6 +304,111 @@ const HamInterface: React.FC<HamInterfaceProps> = ({ onClose, activeFrequency })
         </div>
       </div>
 
+      {/* ADVANCED PROGRAMMING MODAL */}
+      {showProgramMenu && (
+        <div className="absolute inset-0 bg-black/95 z-[250] flex items-center justify-center p-4">
+           <div className="w-full max-w-lg bg-zinc-900 border-2 border-cyan-500 rounded-lg overflow-hidden shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+              <div className="p-4 bg-cyan-500/10 border-b border-cyan-500/30 flex justify-between items-center">
+                 <div className="flex items-center gap-3">
+                    <Cpu size={20} className="text-cyan-400" />
+                    <h2 className="text-sm font-black uppercase tracking-[0.2em] text-cyan-100 italic">Advanced_Signal_Programmer</h2>
+                 </div>
+                 <button onClick={() => setShowProgramMenu(false)} className="p-1 hover:bg-cyan-500/20 rounded">
+                    <X size={20} className="text-cyan-400" />
+                 </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                       <label className="text-[9px] font-black uppercase text-cyan-500/60 tracking-widest">Sweep_Start (MHz)</label>
+                       <input 
+                          type="text" 
+                          value={progStart}
+                          onChange={(e) => setProgStart(e.target.value)}
+                          className="w-full bg-black border border-cyan-500/20 rounded p-3 text-cyan-400 font-black text-sm focus:border-cyan-500/60 focus:outline-none"
+                       />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-[9px] font-black uppercase text-cyan-500/60 tracking-widest">Sweep_End (MHz)</label>
+                       <input 
+                          type="text" 
+                          value={progEnd}
+                          onChange={(e) => setProgEnd(e.target.value)}
+                          className="w-full bg-black border border-cyan-500/20 rounded p-3 text-cyan-400 font-black text-sm focus:border-cyan-500/60 focus:outline-none"
+                       />
+                    </div>
+                 </div>
+
+                 <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                       <label className="text-[9px] font-black uppercase text-cyan-500/60 tracking-widest">Digital_Gain_Level</label>
+                       <span className="text-[10px] font-black text-cyan-400">{progGain}%</span>
+                    </div>
+                    <input 
+                       type="range" 
+                       min="0" max="100" 
+                       value={progGain}
+                       onChange={(e) => setProgGain(parseInt(e.target.value))}
+                       className="w-full accent-cyan-500"
+                    />
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                       <label className="text-[9px] font-black uppercase text-cyan-500/60 tracking-widest">Digital_Filter</label>
+                       <select 
+                          value={progFilter}
+                          onChange={(e) => setProgFilter(e.target.value)}
+                          className="w-full bg-black border border-cyan-500/20 rounded p-3 text-cyan-400 font-black text-xs appearance-none focus:outline-none focus:border-cyan-500/60"
+                       >
+                          <option>Band-Pass</option>
+                          <option>Low-Pass</option>
+                          <option>High-Pass</option>
+                          <option>Notch</option>
+                          <option>Adaptive</option>
+                       </select>
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-[9px] font-black uppercase text-cyan-500/60 tracking-widest">Decrypt_Protocol</label>
+                       <select 
+                          value={progProtocol}
+                          onChange={(e) => setProgProtocol(e.target.value)}
+                          className="w-full bg-black border border-cyan-500/20 rounded p-3 text-cyan-400 font-black text-xs appearance-none focus:outline-none focus:border-cyan-500/60"
+                       >
+                          <option>AES-256-XTS</option>
+                          <option>ChaCha20</option>
+                          <option>ROT13 (Legacy)</option>
+                          <option>RAW_ANALOG</option>
+                          <option>DMR_P25</option>
+                       </select>
+                    </div>
+                 </div>
+
+                 <div className="pt-4 border-t border-cyan-500/10 flex flex-col gap-3">
+                    <button 
+                       onClick={applyProgramming}
+                       className="w-full py-4 bg-cyan-500 text-black font-black uppercase text-xs rounded hover:bg-white transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center justify-center gap-3"
+                    >
+                       <ShieldCheck size={18} /> Apply_&_Synchronize
+                    </button>
+                    <button 
+                       onClick={() => { setProgGain(45); setProgFilter('Band-Pass'); }}
+                       className="w-full py-2 border border-cyan-500/30 text-cyan-500/60 font-black uppercase text-[9px] rounded hover:bg-cyan-500/10 transition-all"
+                    >
+                       Reset_To_Safe_Defaults
+                    </button>
+                 </div>
+              </div>
+
+              <div className="p-3 bg-black flex items-center gap-4 text-[8px] font-black uppercase text-cyan-900 tracking-widest">
+                 <Activity size={10} /> Hardware_ID: ALFA_AWUS_UPLINK_08
+                 <span className="ml-auto">Encryption_Active</span>
+              </div>
+           </div>
+        </div>
+      )}
+
       {/* MODALS */}
       {showWfMenu && (
         <div className="absolute inset-0 bg-black/90 z-[120] p-4 flex flex-col items-center justify-center">
@@ -283,6 +421,24 @@ const HamInterface: React.FC<HamInterfaceProps> = ({ onClose, activeFrequency })
               {WF_MODES.map(m => (
                 <button key={m} onClick={() => { setWfMode(m); setShowWfMenu(false); }} className={`h-40 font-black text-2xl uppercase border border-zinc-700 ${wfMode === m ? 'bg-gradient-to-br from-green-500 to-green-800 text-white' : 'bg-zinc-800 text-zinc-400'}`}>
                   {m === 'NORMAL' || m === 'STRONG' || m === 'WEAK' ? `Waterfall ${m}` : m}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showModeMenu && (
+        <div className="absolute inset-0 bg-black/90 z-[120] p-4 flex flex-col items-center justify-center">
+          <div className="w-full max-w-md border-2 border-cyan-500 rounded shadow-2xl overflow-hidden bg-zinc-900">
+            <div className="bg-black p-4 flex justify-between items-center border-b border-cyan-500">
+              <h2 className="text-white font-black text-xl uppercase tracking-tighter italic">Select Modulation</h2>
+              <button onClick={() => setShowModeMenu(false)} className="text-blue-400"><ArrowLeft className="bg-blue-600 text-white rounded-full p-1" size={32} /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-1 p-1">
+              {MODES.map(m => (
+                <button key={m} onClick={() => { setMode(m); setShowModeMenu(false); }} className={`h-16 font-black text-lg uppercase border border-zinc-700 ${mode === m ? 'bg-cyan-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}>
+                  {m}
                 </button>
               ))}
             </div>

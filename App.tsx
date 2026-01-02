@@ -13,8 +13,9 @@ import PacketSentinel from './components/PacketSentinel';
 import NeuralField from './components/NeuralField';
 import InterceptJournal from './components/InterceptJournal';
 import RemoteExplorer from './components/RemoteExplorer';
+import OhmAnalyzer from './components/OhmAnalyzer';
 import { analyzeIntel } from './services/geminiService';
-import { LayoutGrid, Radio, Terminal, Book, MessageSquare, Settings as SettingsIcon, Menu, X, ChevronRight, Box, ZapOff, ShieldAlert, Activity, Share2, HardDrive, Camera, FolderTree } from 'lucide-react';
+import { LayoutGrid, Radio, Terminal, Book, MessageSquare, Settings as SettingsIcon, Menu, X, ChevronRight, Box, ZapOff, ShieldAlert, Activity, Share2, HardDrive, Camera, FolderTree, Zap } from 'lucide-react';
 
 const App: React.FC = () => {
   const [entities, setEntities] = useState<DetectedEntity[]>([]);
@@ -55,6 +56,12 @@ const App: React.FC = () => {
     setActiveTarget(target);
     setCurrentView('REMOTE_EXPLORER');
     addLog(`BRIDGE: Establishing Network Folder Bridge to ${target.ip}...`, 'INFO');
+  };
+
+  const handleOhmAnalysis = (target: {ip: string, mac: string}) => {
+    setActiveTarget(target);
+    setCurrentView('OHM');
+    addLog(`OHM: Initiating hardware diagnostic for ${target.ip}...`, 'INFO');
   };
 
   const captureActiveView = () => {
@@ -265,6 +272,7 @@ const App: React.FC = () => {
             <NavItem view="PACKET_SENTINEL" icon={<Activity size={18} />} label="Packet Sentinel" />
             <NavItem view="INTERCEPT_JOURNAL" icon={<HardDrive size={18} />} label="Intercept Journal" />
             {activeTarget && <NavItem view="REMOTE_EXPLORER" icon={<FolderTree size={18} />} label="Remote Explorer" />}
+            {activeTarget && <NavItem view="OHM" icon={<Zap size={18} />} label="Ohm Diagnostic" />}
             <NavItem view="HAM" icon={<Radio size={18} />} label="Radio Bridge" />
             <NavItem view="URH" icon={<Terminal size={18} />} label="Protocol Lab" />
             <NavItem view="LOGBOOK" icon={<Book size={18} />} label="The Black Book" />
@@ -344,6 +352,7 @@ const App: React.FC = () => {
 
           {currentView === 'NEURAL_FIELD' && (
             <div className="flex-1 p-4 flex flex-col">
+              {/* Fix: use selectedEntityId instead of undefined selectedId */}
               <NeuralField entities={isJammed ? [] : entities} onSelect={setSelectedEntityId} selectedId={selectedEntityId} />
             </div>
           )}
@@ -371,6 +380,7 @@ const App: React.FC = () => {
                 onClear={() => setIntercepts([])} 
                 onClose={() => setCurrentView('PACKET_SENTINEL')} 
                 onEstablishBridge={handleEstablishBridge}
+                onLaunchOhm={handleOhmAnalysis}
               />
             </div>
           )}
@@ -378,6 +388,12 @@ const App: React.FC = () => {
           {currentView === 'REMOTE_EXPLORER' && activeTarget && (
             <div className="flex-1">
               <RemoteExplorer target={activeTarget} onClose={() => setCurrentView('INTERCEPT_JOURNAL')} />
+            </div>
+          )}
+
+          {currentView === 'OHM' && activeTarget && (
+            <div className="flex-1">
+              <OhmAnalyzer target={activeTarget} onClose={() => setCurrentView('INTERCEPT_JOURNAL')} />
             </div>
           )}
 

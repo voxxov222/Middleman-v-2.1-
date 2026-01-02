@@ -1,7 +1,7 @@
 
 export type EntityType = 'WIFI' | 'BLUETOOTH' | 'NFC' | 'RFID' | 'EXT_IF' | 'VHF' | 'UHF' | 'PACKET';
 
-export type AppView = 'RADAR' | 'HAM' | 'URH' | 'LOGBOOK' | 'SOPHIA' | 'SETTINGS' | 'ENV_3D' | 'PACKET_SENTINEL' | 'NEURAL_FIELD' | 'INTERCEPT_JOURNAL' | 'REMOTE_EXPLORER';
+export type AppView = 'RADAR' | 'HAM' | 'URH' | 'LOGBOOK' | 'SOPHIA' | 'SETTINGS' | 'ENV_3D' | 'PACKET_SENTINEL' | 'NEURAL_FIELD' | 'INTERCEPT_JOURNAL' | 'REMOTE_EXPLORER' | 'OHM';
 
 export interface DetectedEntity {
   id: string;
