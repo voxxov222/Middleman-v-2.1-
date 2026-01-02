@@ -1,0 +1,9 @@
+{
+  "name": "Copy of  Middleman v.2.1",
+  "description": "Tactical multi-spectrum reconnaissance interface. Now with Alfa AWUS OTG hardware support.",
+  "requestFramePermissions": [
+    "geolocation",
+    "bluetooth",
+    "usb"
+  ]
+}
